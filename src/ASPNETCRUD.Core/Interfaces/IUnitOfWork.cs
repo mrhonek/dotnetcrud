@@ -4,6 +4,7 @@ namespace ASPNETCRUD.Core.Interfaces
     {
         IProductRepository Products { get; }
         ICategoryRepository Categories { get; }
+        IUserRepository Users { get; }
         
         Task<int> CompleteAsync();
     }

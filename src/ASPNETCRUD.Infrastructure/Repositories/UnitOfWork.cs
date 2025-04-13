@@ -6,9 +6,9 @@ namespace ASPNETCRUD.Infrastructure.Repositories
     public class UnitOfWork : IUnitOfWork
     {
         private readonly ApplicationDbContext _dbContext;
-        private IProductRepository _productRepository;
-        private ICategoryRepository _categoryRepository;
-        private IUserRepository _userRepository;
+        private required IProductRepository _productRepository;
+        private required ICategoryRepository _categoryRepository;
+        private required IUserRepository _userRepository;
         private bool _disposed;
 
         public UnitOfWork(ApplicationDbContext dbContext)
