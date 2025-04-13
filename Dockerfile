@@ -5,12 +5,15 @@ EXPOSE 443
 
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
-COPY ["src/ASPNETCRUD.API/ASPNETCRUD.API.csproj", "src/ASPNETCRUD.API/"]
-COPY ["src/ASPNETCRUD.Application/ASPNETCRUD.Application.csproj", "src/ASPNETCRUD.Application/"]
-COPY ["src/ASPNETCRUD.Core/ASPNETCRUD.Core.csproj", "src/ASPNETCRUD.Core/"]
-COPY ["src/ASPNETCRUD.Infrastructure/ASPNETCRUD.Infrastructure.csproj", "src/ASPNETCRUD.Infrastructure/"]
-RUN dotnet restore "src/ASPNETCRUD.API/ASPNETCRUD.API.csproj"
-COPY . .
+COPY ["src/ASPNETCRUD.API/ASPNETCRUD.API.csproj", "ASPNETCRUD.API/"]
+COPY ["src/ASPNETCRUD.Application/ASPNETCRUD.Application.csproj", "ASPNETCRUD.Application/"]
+COPY ["src/ASPNETCRUD.Core/ASPNETCRUD.Core.csproj", "ASPNETCRUD.Core/"]
+COPY ["src/ASPNETCRUD.Infrastructure/ASPNETCRUD.Infrastructure.csproj", "ASPNETCRUD.Infrastructure/"]
+RUN dotnet restore "ASPNETCRUD.API/ASPNETCRUD.API.csproj"
+COPY ["src/ASPNETCRUD.API/", "ASPNETCRUD.API/"]
+COPY ["src/ASPNETCRUD.Application/", "ASPNETCRUD.Application/"]
+COPY ["src/ASPNETCRUD.Core/", "ASPNETCRUD.Core/"]
+COPY ["src/ASPNETCRUD.Infrastructure/", "ASPNETCRUD.Infrastructure/"]
 WORKDIR "/src/ASPNETCRUD.API"
 RUN dotnet build "ASPNETCRUD.API.csproj" -c Release -o /app/build
 
