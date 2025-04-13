@@ -6,21 +6,24 @@ namespace ASPNETCRUD.Infrastructure.Repositories
     public class UnitOfWork : IUnitOfWork
     {
         private readonly ApplicationDbContext _dbContext;
-        private required IProductRepository _productRepository;
-        private required ICategoryRepository _categoryRepository;
-        private required IUserRepository _userRepository;
+        private IProductRepository _productRepository;
+        private ICategoryRepository _categoryRepository;
+        private IUserRepository _userRepository;
         private bool _disposed;
 
         public UnitOfWork(ApplicationDbContext dbContext)
         {
             _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
+            _productRepository = new ProductRepository(_dbContext);
+            _categoryRepository = new CategoryRepository(_dbContext);
+            _userRepository = new UserRepository(_dbContext);
         }
 
-        public IProductRepository Products => _productRepository ??= new ProductRepository(_dbContext);
+        public IProductRepository Products => _productRepository;
 
-        public ICategoryRepository Categories => _categoryRepository ??= new CategoryRepository(_dbContext);
+        public ICategoryRepository Categories => _categoryRepository;
 
-        public IUserRepository Users => _userRepository ??= new UserRepository(_dbContext);
+        public IUserRepository Users => _userRepository;
 
         public async Task<int> CompleteAsync()
         {
