@@ -2,7 +2,7 @@
 
 A RESTful API built with ASP.NET Core and Entity Framework Core using Clean Architecture principles. This project demonstrates how to create a well-structured API that follows best practices.
 
-## 🔍 Features
+## Features
 
 - **Clean Architecture** pattern
 - **Entity Framework Core** with PostgreSQL
@@ -15,7 +15,7 @@ A RESTful API built with ASP.NET Core and Entity Framework Core using Clean Arch
 - **Docker & Docker Compose** support
 - **Railway** deployment ready
 
-## 🏗️ Project Structure
+## Project Structure
 
 The solution follows Clean Architecture and is organized into four main projects:
 
@@ -24,7 +24,7 @@ The solution follows Clean Architecture and is organized into four main projects
 - **ASPNETCRUD.Infrastructure**: Database, repositories, and external services
 - **ASPNETCRUD.API**: Controllers, middleware, and configuration
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
@@ -57,7 +57,7 @@ The solution follows Clean Architecture and is organized into four main projects
      dotnet run
      ```
 
-## 📝 API Endpoints
+## API Endpoints
 
 ### Authentication
 
@@ -83,7 +83,7 @@ The solution follows Clean Architecture and is organized into four main projects
 - `PUT /api/categories/{id}` - Update category (Admin role required)
 - `DELETE /api/categories/{id}` - Delete category (Admin role required)
 
-## 🔒 Security Considerations
+## Security Considerations
 
 Before deploying to production, make sure to:
 
@@ -103,7 +103,7 @@ Before deploying to production, make sure to:
    - Implement rate limiting for APIs
    - Consider implementing API keys for non-user based access
 
-## 🌐 Deployment to Railway
+## Deployment to Railway
 
 1. Create a new Railway project
 2. Add a PostgreSQL plugin
@@ -118,6 +118,6 @@ Before deploying to production, make sure to:
 
 5. Deploy and enjoy!
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License - see the LICENSE file for details. 
