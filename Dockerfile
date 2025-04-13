@@ -11,7 +11,7 @@ COPY ["src/ASPNETCRUD.Core/ASPNETCRUD.Core.csproj", "src/ASPNETCRUD.Core/"]
 COPY ["src/ASPNETCRUD.Infrastructure/ASPNETCRUD.Infrastructure.csproj", "src/ASPNETCRUD.Infrastructure/"]
 RUN dotnet restore "src/ASPNETCRUD.API/ASPNETCRUD.API.csproj"
 COPY . .
-WORKDIR "/src/src/ASPNETCRUD.API"
+WORKDIR "/src/ASPNETCRUD.API"
 RUN dotnet build "ASPNETCRUD.API.csproj" -c Release -o /app/build
 
 FROM build AS publish
