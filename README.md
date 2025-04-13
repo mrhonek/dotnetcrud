@@ -83,26 +83,6 @@ The solution follows Clean Architecture and is organized into four main projects
 - `PUT /api/categories/{id}` - Update category (Admin role required)
 - `DELETE /api/categories/{id}` - Delete category (Admin role required)
 
-## Security Considerations
-
-Before deploying to production, make sure to:
-
-1. **Update JWT Settings**: 
-   - Replace the placeholder JWT key in `appsettings.json` with a strong, randomly generated key
-   - Use environment variables instead of configuration files for secrets in production
-   - `JwtSettings__Key` should be at least 256 bits (32 characters) of randomness
-
-2. **Database Security**:
-   - Don't use the default `postgres` username/password in production
-   - Create a dedicated database user with minimal required permissions
-   - Use environment variables for database connection strings
-
-3. **Production Security Checklist**:
-   - Enable HTTPS and configure proper certificates
-   - Review and test authorization policies
-   - Implement rate limiting for APIs
-   - Consider implementing API keys for non-user based access
-
 ## Deployment to Railway
 
 1. Create a new Railway project
