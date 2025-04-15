@@ -29,22 +29,86 @@ namespace ASPNETCRUD.API.Controllers
                 
             try
             {
+                // More detailed model logging
+                _logger.LogDebug("Registration request details: {@RegisterData}", 
+                    new 
+                    { 
+                        Username = registerDto.Username, 
+                        Email = registerDto.Email, 
+                        FirstName = registerDto.FirstName, 
+                        LastName = registerDto.LastName,
+                        HasPassword = !string.IsNullOrEmpty(registerDto.Password),
+                        HasConfirmPassword = !string.IsNullOrEmpty(registerDto.ConfirmPassword),
+                        PasswordsMatch = registerDto.Password == registerDto.ConfirmPassword
+                    });
+                
+                // Manual validation check to catch potential model binding issues
+                var validationIssues = new List<string>();
+                
+                if (string.IsNullOrWhiteSpace(registerDto.Username))
+                    validationIssues.Add("Username is required");
+                    
+                if (string.IsNullOrWhiteSpace(registerDto.Email))
+                    validationIssues.Add("Email is required");
+                    
+                if (string.IsNullOrWhiteSpace(registerDto.Password))
+                    validationIssues.Add("Password is required");
+                    
+                if (!string.IsNullOrWhiteSpace(registerDto.Password) && 
+                    string.IsNullOrWhiteSpace(registerDto.ConfirmPassword))
+                    validationIssues.Add("Confirm Password is required");
+                
+                if (validationIssues.Count > 0)
+                {
+                    _logger.LogWarning("Manual validation failed: {Issues}", 
+                        string.Join(", ", validationIssues));
+                    
+                    return BadRequest(new AuthResponseDto {
+                        IsSuccess = false,
+                        Message = "Validation failed",
+                        Errors = validationIssues
+                    });
+                }
+                
+                // Check if model state is valid
                 if (!ModelState.IsValid)
                 {
-                    _logger.LogWarning("Invalid model state for registration: {ModelState}", 
-                        JsonSerializer.Serialize(ModelState.Values
-                            .SelectMany(v => v.Errors)
-                            .Select(e => e.ErrorMessage)));
-                    return BadRequest(ModelState);
+                    var errors = ModelState.Values
+                        .SelectMany(v => v.Errors)
+                        .Select(e => e.ErrorMessage)
+                        .ToList();
+                    
+                    _logger.LogWarning("Model state validation failed: {Errors}", 
+                        string.Join(", ", errors));
+                        
+                    return BadRequest(new AuthResponseDto {
+                        IsSuccess = false,
+                        Message = "Validation failed",
+                        Errors = errors
+                    });
                 }
 
-                _logger.LogInformation("Model state valid, proceeding with registration");
+                _logger.LogInformation("Model validation passed, proceeding with registration");
                 var result = await _authService.RegisterAsync(registerDto);
 
                 if (!result.IsSuccess)
                 {
-                    _logger.LogWarning("Registration failed: {Errors}", 
-                        string.Join(", ", result.Errors));
+                    // Log all errors
+                    _logger.LogWarning("Registration failed in service: {Message}. Errors: {Errors}", 
+                        result.Message,
+                        result.Errors.Count > 0 ? string.Join(", ", result.Errors) : "None");
+                    
+                    // Ensure there's always at least one error message to show the user
+                    if (result.Errors.Count == 0 && !string.IsNullOrEmpty(result.Message))
+                    {
+                        result.Errors.Add(result.Message);
+                    }
+                    else if (result.Errors.Count == 0 && string.IsNullOrEmpty(result.Message))
+                    {
+                        result.Message = "Registration failed";
+                        result.Errors.Add("An unknown error occurred");
+                    }
+                    
                     return BadRequest(result);
                 }
 
@@ -54,7 +118,16 @@ namespace ASPNETCRUD.API.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Exception during registration for {Username}", registerDto.Username);
-                throw; // Let the middleware handle it
+                
+                // Return detailed error information in non-production environments
+                var errorResponse = new AuthResponseDto
+                {
+                    IsSuccess = false,
+                    Message = "An error occurred during registration",
+                    Errors = new List<string> { ex.Message }
+                };
+                
+                return BadRequest(errorResponse);
             }
         }
 
@@ -79,87 +152,66 @@ namespace ASPNETCRUD.API.Controllers
         [HttpPost("refresh-token")]
         public async Task<ActionResult<AuthResponseDto>> RefreshToken(RefreshTokenDto refreshTokenDto)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
             var result = await _authService.RefreshTokenAsync(refreshTokenDto);
 
             if (!result.IsSuccess)
             {
-                return Unauthorized(result);
+                return BadRequest(result);
             }
 
             return Ok(result);
         }
 
-        [HttpPost("revoke")]
+        [HttpPost("revoke-token")]
         [Authorize]
         public async Task<IActionResult> RevokeToken()
         {
             var username = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(username))
             {
-                return Unauthorized(new { message = "Invalid token" });
+                return BadRequest(new { message = "Invalid token" });
             }
 
             var result = await _authService.RevokeTokenAsync(username);
 
             if (!result)
             {
-                return BadRequest(new { message = "Failed to revoke token" });
+                return BadRequest(new { message = "Token revocation failed" });
             }
 
-            return NoContent();
+            return Ok(new { message = "Token revoked successfully" });
         }
 
         [HttpGet("diagnostic")]
-        public ActionResult<object> RunDiagnostic()
+        [Authorize(Roles = "Admin")]
+        public IActionResult RunDiagnostic()
         {
-            var diagnosticResults = new Dictionary<string, object>();
-            
             try
             {
-                // Check JWT configuration more simply
-                _logger.LogInformation("Checking JWT configuration");
-                var jwtConfigured = false;
+                var isJwtConfigured = _authService.IsJwtConfigured();
+                _logger.LogInformation("JWT configured: {IsConfigured}", isJwtConfigured);
                 
-                try {
-                    jwtConfigured = _authService.IsJwtConfigured();
-                    diagnosticResults.Add("JwtConfigured", jwtConfigured);
-                }
-                catch (Exception jwtEx) {
-                    diagnosticResults.Add("JwtError", jwtEx.Message);
-                }
+                var dbTestResult = _authService.TestDatabaseConnection();
+                _logger.LogInformation("Database connection test: Database={DatabaseName}, UserCount={UserCount}", 
+                    dbTestResult.DatabaseName, dbTestResult.UserCount);
                 
-                // Check database connection
-                var dbResult = new Dictionary<string, object>();
-                try
+                return Ok(new
                 {
-                    var testData = _authService.TestDatabaseConnection();
-                    dbResult.Add("Connected", true);
-                    dbResult.Add("UserCount", testData.UserCount);
-                    
-                    // Avoid null reference by using null conditional and null coalescing operators
-                    dbResult.Add("DatabaseName", testData.DatabaseName ?? "Unknown");
-                    diagnosticResults.Add("Database", dbResult);
-                }
-                catch (Exception dbEx)
-                {
-                    dbResult.Add("Connected", false);
-                    dbResult.Add("Error", dbEx.Message ?? "Unknown error");
-                    
-                    // Avoid null reference with null conditional and null coalescing operators
-                    dbResult.Add("InnerError", dbEx.InnerException?.Message ?? "No inner exception");
-                    diagnosticResults.Add("Database", dbResult);
-                }
-                
-                diagnosticResults.Add("Success", true);
+                    JwtConfigured = isJwtConfigured,
+                    DatabaseName = dbTestResult.DatabaseName,
+                    UserCount = dbTestResult.UserCount
+                });
             }
             catch (Exception ex)
             {
-                diagnosticResults.Add("Success", false);
-                diagnosticResults.Add("Error", ex.Message ?? "Unknown error");
-                diagnosticResults.Add("StackTrace", ex.StackTrace ?? "No stack trace available");
+                _logger.LogError(ex, "Error during diagnostic check");
+                return StatusCode(500, new { message = "Error during diagnostic check", error = ex.Message });
             }
-            
-            return Ok(diagnosticResults);
         }
     }
 } 

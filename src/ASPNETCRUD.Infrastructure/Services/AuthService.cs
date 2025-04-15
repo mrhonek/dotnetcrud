@@ -81,6 +81,8 @@ namespace ASPNETCRUD.Infrastructure.Services
         {
             _logger.LogInformation("Starting registration process for {Username}", registerDto.Username);
             var response = new AuthResponseDto();
+            // Set IsSuccess to true by default and change to false if any validation fails
+            response.IsSuccess = true;
 
             try
             {
@@ -91,6 +93,45 @@ namespace ASPNETCRUD.Infrastructure.Services
                     WriteIndented = true
                 }));
                 #endif
+
+                // Perform basic validation
+                var validationErrors = new List<string>();
+                
+                if (string.IsNullOrWhiteSpace(registerDto.Username))
+                {
+                    validationErrors.Add("Username is required");
+                }
+                else if (registerDto.Username.Length < 3)
+                {
+                    validationErrors.Add("Username must be at least 3 characters");
+                }
+                
+                if (string.IsNullOrWhiteSpace(registerDto.Email))
+                {
+                    validationErrors.Add("Email is required");
+                }
+                
+                if (string.IsNullOrWhiteSpace(registerDto.Password))
+                {
+                    validationErrors.Add("Password is required");
+                }
+                else if (registerDto.Password != registerDto.ConfirmPassword)
+                {
+                    validationErrors.Add("Passwords do not match");
+                }
+                
+                // Add any validation errors to the response
+                if (validationErrors.Count > 0)
+                {
+                    response.IsSuccess = false;
+                    response.Message = "Validation failed";
+                    response.Errors.AddRange(validationErrors);
+                    
+                    _logger.LogWarning("Validation failed during basic checks. Errors: {Errors}", 
+                        string.Join(", ", validationErrors));
+                    
+                    return response;
+                }
 
                 // Validate unique username and email
                 _logger.LogInformation("Checking if username {Username} is unique", registerDto.Username);
@@ -113,8 +154,15 @@ namespace ASPNETCRUD.Infrastructure.Services
 
                 if (!response.IsSuccess)
                 {
-                    _logger.LogWarning("Validation failed. Errors: {Errors}", 
+                    // Make sure we have a message if errors exist
+                    if (string.IsNullOrEmpty(response.Message))
+                    {
+                        response.Message = "Validation failed";
+                    }
+                    
+                    _logger.LogWarning("Validation failed during uniqueness checks. Errors: {Errors}", 
                         string.Join(", ", response.Errors));
+                    
                     return response;
                 }
 
