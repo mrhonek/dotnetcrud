@@ -9,6 +9,7 @@ using BCrypt.Net;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;
 using System.Linq;
+using ASPNETCRUD.Infrastructure.Data;
 
 namespace ASPNETCRUD.Infrastructure.Services
 {
@@ -253,14 +254,22 @@ namespace ASPNETCRUD.Infrastructure.Services
             {
                 _logger.LogInformation("Testing database connection");
                 
-                // Get the DbContext through the UnitOfWork
-                // This approach depends on how your UnitOfWork is implemented
-                var dbContext = _unitOfWork.GetDbContext();
+                // Get the DbContext through the UnitOfWork and cast it to the correct type
+                var dbContextObj = _unitOfWork.GetDbContext();
                 
-                if (dbContext == null)
+                if (dbContextObj == null)
                 {
                     _logger.LogError("Could not access database context from unit of work");
                     throw new InvalidOperationException("Database context is not accessible");
+                }
+                
+                // Cast to ApplicationDbContext
+                var dbContext = dbContextObj as ApplicationDbContext;
+                
+                if (dbContext == null)
+                {
+                    _logger.LogError("Database context is not of type ApplicationDbContext");
+                    throw new InvalidOperationException("Invalid database context type");
                 }
                 
                 // Try a simple connection test
