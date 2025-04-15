@@ -304,5 +304,32 @@ namespace ASPNETCRUD.Infrastructure.Services
                 throw;
             }
         }
+
+        public bool IsJwtConfigured()
+        {
+            try
+            {
+                _logger.LogInformation("Checking if JWT is configured");
+                
+                // Check if key exists and is not empty
+                var hasKey = !string.IsNullOrEmpty(_jwtSettings.Key);
+                _logger.LogInformation("JWT Key exists and is not empty: {HasKey}", hasKey);
+                
+                // Check if issuer exists
+                var hasIssuer = !string.IsNullOrEmpty(_jwtSettings.Issuer);
+                _logger.LogInformation("JWT Issuer exists and is not empty: {HasIssuer}", hasIssuer);
+                
+                // Check if audience exists
+                var hasAudience = !string.IsNullOrEmpty(_jwtSettings.Audience);
+                _logger.LogInformation("JWT Audience exists and is not empty: {HasAudience}", hasAudience);
+                
+                return hasKey && hasIssuer && hasAudience;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error checking JWT configuration");
+                return false;
+            }
+        }
     }
 } 

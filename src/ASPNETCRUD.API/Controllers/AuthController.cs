@@ -116,13 +116,17 @@ namespace ASPNETCRUD.API.Controllers
             
             try
             {
-                // Check JWT settings
-                var jwtField = typeof(JwtSettings).GetField("Key", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
-                var keyExists = !string.IsNullOrEmpty(_authService.GetType()
-                    .GetField("_jwtSettings", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
-                    ?.GetValue(_authService)?.ToString());
+                // Check JWT configuration more simply
+                _logger.LogInformation("Checking JWT configuration");
+                var jwtConfigured = false;
                 
-                diagnosticResults.Add("JwtConfigured", keyExists);
+                try {
+                    jwtConfigured = _authService.IsJwtConfigured();
+                    diagnosticResults.Add("JwtConfigured", jwtConfigured);
+                }
+                catch (Exception jwtEx) {
+                    diagnosticResults.Add("JwtError", jwtEx.Message);
+                }
                 
                 // Check database connection
                 var dbResult = new Dictionary<string, object>();
@@ -131,14 +135,18 @@ namespace ASPNETCRUD.API.Controllers
                     var testData = _authService.TestDatabaseConnection();
                     dbResult.Add("Connected", true);
                     dbResult.Add("UserCount", testData.UserCount);
-                    dbResult.Add("DatabaseName", testData.DatabaseName);
+                    
+                    // Avoid null reference by using null conditional and null coalescing operators
+                    dbResult.Add("DatabaseName", testData.DatabaseName ?? "Unknown");
                     diagnosticResults.Add("Database", dbResult);
                 }
                 catch (Exception dbEx)
                 {
                     dbResult.Add("Connected", false);
-                    dbResult.Add("Error", dbEx.Message);
-                    dbResult.Add("InnerError", dbEx.InnerException?.Message);
+                    dbResult.Add("Error", dbEx.Message ?? "Unknown error");
+                    
+                    // Avoid null reference with null conditional and null coalescing operators
+                    dbResult.Add("InnerError", dbEx.InnerException?.Message ?? "No inner exception");
                     diagnosticResults.Add("Database", dbResult);
                 }
                 
@@ -147,8 +155,8 @@ namespace ASPNETCRUD.API.Controllers
             catch (Exception ex)
             {
                 diagnosticResults.Add("Success", false);
-                diagnosticResults.Add("Error", ex.Message);
-                diagnosticResults.Add("StackTrace", ex.StackTrace);
+                diagnosticResults.Add("Error", ex.Message ?? "Unknown error");
+                diagnosticResults.Add("StackTrace", ex.StackTrace ?? "No stack trace available");
             }
             
             return Ok(diagnosticResults);
