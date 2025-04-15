@@ -8,5 +8,14 @@ namespace ASPNETCRUD.Application.Interfaces
         Task<AuthResponseDto> RegisterAsync(RegisterDto registerDto);
         Task<AuthResponseDto> RefreshTokenAsync(RefreshTokenDto refreshTokenDto);
         Task<bool> RevokeTokenAsync(string username);
+        
+        // Diagnostic method
+        DatabaseTestResult TestDatabaseConnection();
+    }
+    
+    public class DatabaseTestResult
+    {
+        public int UserCount { get; set; }
+        public string DatabaseName { get; set; }
     }
 } 

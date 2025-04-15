@@ -41,15 +41,18 @@ namespace ASPNETCRUD.API.Middleware
 
             context.Response.StatusCode = statusCode;
 
+            var isDevelopment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development";
+            
             var response = new
             {
                 StatusCode = statusCode,
                 Message = exception.Message,
-                // In development you might want to include more details
-                // but in production, keep error details minimal
-                Trace = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development" 
-                    ? exception.StackTrace 
-                    : null
+                // In development show detailed error information
+                DetailedError = isDevelopment ? exception.ToString() : null,
+                InnerExceptionMessage = isDevelopment && exception.InnerException != null 
+                    ? exception.InnerException.Message 
+                    : null,
+                StackTrace = isDevelopment ? exception.StackTrace : null
             };
 
             var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };

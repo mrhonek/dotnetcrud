@@ -2,6 +2,7 @@ using ASPNETCRUD.API.Middleware;
 using ASPNETCRUD.Application;
 using ASPNETCRUD.Infrastructure;
 using Microsoft.OpenApi.Models;
+using System.IO;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,6 +15,14 @@ builder.Configuration
 
 // Add services to the container
 builder.Services.AddControllers();
+
+// Add logging with debug level for auth-related categories
+builder.Logging.AddConsole();
+builder.Logging.AddDebug();
+
+// Add temporary debug logs
+builder.Logging.AddFilter("ASPNETCRUD.API.Controllers.AuthController", LogLevel.Debug);
+builder.Logging.AddFilter("ASPNETCRUD.Infrastructure.Services.AuthService", LogLevel.Debug);
 
 // Add Swagger
 builder.Services.AddEndpointsApiExplorer();
@@ -83,7 +92,51 @@ app.UseSwaggerUI();
 
 app.UseHttpsRedirection();
 
-// Use custom exception handler middleware
+// TEMPORARY FOR DEBUGGING: Add logging middleware to log all requests/responses
+app.Use(async (context, next) =>
+{
+    var logger = app.Services.GetRequiredService<ILogger<Program>>();
+    
+    // Log the request
+    logger.LogInformation("Request: {Method} {Path}{QueryString}",
+        context.Request.Method,
+        context.Request.Path,
+        context.Request.QueryString);
+    
+    // For POST/PUT requests, try to log the body
+    if ((context.Request.Method == "POST" || context.Request.Method == "PUT") && 
+        context.Request.Path.ToString().Contains("/Auth/"))
+    {
+        try
+        {
+            // Enable request body reading
+            context.Request.EnableBuffering();
+            
+            using (var reader = new StreamReader(context.Request.Body, leaveOpen: true))
+            {
+                var body = await reader.ReadToEndAsync();
+                if (!string.IsNullOrEmpty(body))
+                {
+                    // Log the body but strip out password fields for security
+                    var sanitizedBody = body.Replace("\"password\":\"[^\"]*\"", "\"password\":\"[REDACTED]\"")
+                                          .Replace("\"confirmPassword\":\"[^\"]*\"", "\"confirmPassword\":\"[REDACTED]\"");
+                    logger.LogDebug("Request body: {Body}", sanitizedBody);
+                }
+                
+                // Reset the position to allow reading again
+                context.Request.Body.Position = 0;
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error reading request body");
+        }
+    }
+    
+    await next();
+});
+
+// Still use the custom exception handler but with our enhanced error details
 app.UseCustomExceptionHandler();
 
 app.UseCors("AllowAll");
@@ -93,19 +146,25 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-// Run EF Core migrations automatically
+// Run EF Core migrations automatically with better error logging
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
+    var logger = services.GetRequiredService<ILogger<Program>>();
+    
     try
     {
+        logger.LogInformation("Starting database initialization");
         var context = services.GetRequiredService<ASPNETCRUD.Infrastructure.Data.ApplicationDbContext>();
-        context.Database.EnsureCreated();
+        logger.LogInformation("Database context created");
+        
+        logger.LogInformation("Ensuring database is created");
+        var dbCreated = context.Database.EnsureCreated();
+        logger.LogInformation("Database created: {Created}", dbCreated);
     }
     catch (Exception ex)
     {
-        var logger = services.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "An error occurred while migrating the database.");
+        logger.LogError(ex, "An error occurred while initializing the database");
     }
 }
 
