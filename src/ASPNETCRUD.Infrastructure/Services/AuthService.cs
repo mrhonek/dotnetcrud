@@ -40,13 +40,37 @@ namespace ASPNETCRUD.Infrastructure.Services
         public async Task<AuthResponseDto> LoginAsync(LoginDto loginDto)
         {
             var response = new AuthResponseDto();
+            _logger.LogInformation("Login attempt with input: {Username}", loginDto.Username);
 
-            var user = await _unitOfWork.Users.GetByUsernameAsync(loginDto.Username);
+            // Check if input is an email (contains @) or username
+            User? user = null;
+            string loginInput = loginDto.Username.Trim();
+            
+            if (loginInput.Contains('@'))
+            {
+                // Try to find user by email
+                _logger.LogInformation("Input contains @, treating as email");
+                user = await _unitOfWork.Users.GetByEmailAsync(loginInput);
+                
+                if (user == null)
+                {
+                    // If not found by email, try by username as a fallback
+                    _logger.LogInformation("User not found by email, trying username");
+                    user = await _unitOfWork.Users.GetByUsernameAsync(loginInput);
+                }
+            }
+            else
+            {
+                // Try to find by username
+                _logger.LogInformation("Input doesn't contain @, treating as username");
+                user = await _unitOfWork.Users.GetByUsernameAsync(loginInput);
+            }
             
             if (user == null)
             {
+                _logger.LogWarning("Login failed: user not found with input {Input}", loginInput);
                 response.IsSuccess = false;
-                response.Message = "Invalid username or password";
+                response.Message = "Invalid credentials";
                 return response;
             }
 
@@ -54,8 +78,9 @@ namespace ASPNETCRUD.Infrastructure.Services
             
             if (!isPasswordValid)
             {
+                _logger.LogWarning("Login failed: invalid password for user {Username}", user.Username);
                 response.IsSuccess = false;
-                response.Message = "Invalid username or password";
+                response.Message = "Invalid credentials";
                 return response;
             }
 
@@ -69,6 +94,7 @@ namespace ASPNETCRUD.Infrastructure.Services
             await _unitOfWork.Users.UpdateAsync(user);
             await _unitOfWork.CompleteAsync();
 
+            _logger.LogInformation("Login successful for {Username}", user.Username);
             response.IsSuccess = true;
             response.Token = token;
             response.RefreshToken = refreshToken;

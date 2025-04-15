@@ -8,10 +8,10 @@ namespace ASPNETCRUD.Application.Validators
         public LoginDtoValidator()
         {
             RuleFor(p => p.Username)
-                .NotEmpty().WithMessage("{PropertyName} is required");
+                .NotEmpty().WithMessage("Username or email is required");
 
             RuleFor(p => p.Password)
-                .NotEmpty().WithMessage("{PropertyName} is required");
+                .NotEmpty().WithMessage("Password is required");
         }
     }
 } 
