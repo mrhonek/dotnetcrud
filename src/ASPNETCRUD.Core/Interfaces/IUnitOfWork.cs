@@ -7,5 +7,7 @@ namespace ASPNETCRUD.Core.Interfaces
         IUserRepository Users { get; }
         
         Task<int> CompleteAsync();
+        
+        object GetDbContext();
     }
 } 

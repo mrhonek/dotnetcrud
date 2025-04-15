@@ -253,44 +253,49 @@ namespace ASPNETCRUD.Infrastructure.Services
             {
                 _logger.LogInformation("Testing database connection");
                 
-                // Get the connection string (safely, without exposing sensitive information)
-                var connectionString = _unitOfWork.GetType()
-                    .Assembly
-                    .GetTypes()
-                    .FirstOrDefault(t => t.Name == "ApplicationDbContext")?
-                    .GetProperty("Database")?
-                    .GetValue(_unitOfWork.GetType()
-                        .GetProperty("DbContext")?
-                        .GetValue(_unitOfWork))?
-                    .ToString();
+                // Get the DbContext through the UnitOfWork
+                // This approach depends on how your UnitOfWork is implemented
+                var dbContext = _unitOfWork.GetDbContext();
                 
-                _logger.LogInformation("Database connection available: {ConnectionAvailable}", 
-                    !string.IsNullOrEmpty(connectionString));
+                if (dbContext == null)
+                {
+                    _logger.LogError("Could not access database context from unit of work");
+                    throw new InvalidOperationException("Database context is not accessible");
+                }
                 
-                // Count users
-                var userCount = _unitOfWork.Users.GetAllAsync().Result.Count();
-                _logger.LogInformation("User count: {UserCount}", userCount);
+                // Try a simple connection test
+                var canConnect = dbContext.Database.CanConnect();
+                _logger.LogInformation("Database connection test: {CanConnect}", canConnect);
                 
-                // Get database name
-                var dbContext = _unitOfWork.GetType()
-                    .GetProperty("DbContext")?
-                    .GetValue(_unitOfWork);
+                if (!canConnect)
+                {
+                    _logger.LogWarning("Database connection test failed");
+                    throw new InvalidOperationException("Cannot connect to the database");
+                }
                 
-                var database = dbContext?.GetType()
-                    .GetProperty("Database")?
-                    .GetValue(dbContext);
+                // Count users - safely
+                int userCount = 0;
+                try
+                {
+                    userCount = _unitOfWork.Users.GetAllAsync().Result.Count();
+                    _logger.LogInformation("User count: {UserCount}", userCount);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error counting users");
+                }
                 
-                var databaseName = database?.GetType()
-                    .GetMethod("GetDbConnection")?
-                    .Invoke(database, null)?
-                    .GetType()
-                    .GetProperty("Database")?
-                    .GetValue(database.GetType()
-                        .GetMethod("GetDbConnection")?
-                        .Invoke(database, null))
-                    ?.ToString() ?? "Unknown";
-                
-                _logger.LogInformation("Database name: {DatabaseName}", databaseName);
+                // Get database name - more safely
+                string databaseName = "Unknown";
+                try
+                {
+                    databaseName = dbContext.Database.GetDbConnection().Database;
+                    _logger.LogInformation("Database name: {DatabaseName}", databaseName);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error getting database name");
+                }
                 
                 return new DatabaseTestResult
                 {

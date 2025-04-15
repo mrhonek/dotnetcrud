@@ -30,6 +30,11 @@ namespace ASPNETCRUD.Infrastructure.Repositories
             return await _dbContext.SaveChangesAsync();
         }
 
+        public object GetDbContext()
+        {
+            return _dbContext;
+        }
+
         public void Dispose()
         {
             Dispose(true);
