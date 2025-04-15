@@ -10,6 +10,8 @@ using Microsoft.Extensions.Logging;
 using System.Text.Json;
 using System.Linq;
 using ASPNETCRUD.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 
 namespace ASPNETCRUD.Infrastructure.Services
 {
@@ -298,7 +300,28 @@ namespace ASPNETCRUD.Infrastructure.Services
                 string databaseName = "Unknown";
                 try
                 {
-                    databaseName = dbContext.Database.GetDbConnection().Database;
+                    // Option 1: Get from connection string (without exposing full connection string)
+                    var connectionString = dbContext.Database.GetConnectionString();
+                    if (!string.IsNullOrEmpty(connectionString))
+                    {
+                        // Parse database name from connection string safely (without showing the whole string)
+                        var parts = connectionString.Split(';')
+                            .Select(part => part.Trim())
+                            .Where(part => part.StartsWith("Database=", StringComparison.OrdinalIgnoreCase))
+                            .FirstOrDefault();
+
+                        if (parts != null)
+                        {
+                            databaseName = parts.Substring("Database=".Length);
+                        }
+                    }
+                    
+                    // Option 2: Try to use the provider name as a fallback
+                    if (databaseName == "Unknown")
+                    {
+                        databaseName = dbContext.Database.ProviderName?.Split('.').LastOrDefault() ?? "Unknown";
+                    }
+                    
                     _logger.LogInformation("Database name: {DatabaseName}", databaseName);
                 }
                 catch (Exception ex)
