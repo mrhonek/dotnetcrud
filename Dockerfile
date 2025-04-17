@@ -23,4 +23,14 @@ RUN dotnet publish "ASPNETCRUD.API.csproj" -c Release -o /app/publish
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "ASPNETCRUD.API.dll"] 
+COPY start.sh .
+RUN chmod +x start.sh
+
+# Set environment variables
+ENV ASPNETCORE_URLS=http://+:8000
+
+# Expose the port
+EXPOSE 8000
+
+# Start the application using our script
+ENTRYPOINT ["./start.sh"] 

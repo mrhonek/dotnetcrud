@@ -1,5 +1,6 @@
 using ASPNETCRUD.API.Middleware;
 using ASPNETCRUD.API.Services;
+using ASPNETCRUD.API.Jobs;
 using ASPNETCRUD.Application;
 using ASPNETCRUD.Infrastructure;
 using Microsoft.OpenApi.Models;
@@ -7,6 +8,9 @@ using System.IO;
 using AspNetCoreRateLimit;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Check for database reset command
+bool resetDatabase = args.Contains("--reset-database");
 
 // Load environment variables
 var environment = builder.Environment.EnvironmentName;
@@ -34,8 +38,9 @@ builder.Logging.AddDebug();
 builder.Logging.AddFilter("ASPNETCRUD.API.Controllers.AuthController", LogLevel.Debug);
 builder.Logging.AddFilter("ASPNETCRUD.Infrastructure.Services.AuthService", LogLevel.Debug);
 
-// Register the DataSeeder
+// Register the DataSeeder and DatabaseResetJob
 builder.Services.AddScoped<DataSeeder>();
+builder.Services.AddScoped<DatabaseResetJob>();
 
 // Add Swagger
 builder.Services.AddEndpointsApiExplorer();
@@ -97,6 +102,28 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+
+// If reset database command was passed, run the reset and exit
+if (resetDatabase)
+{
+    using var scope = app.Services.CreateScope();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    var resetJob = scope.ServiceProvider.GetRequiredService<DatabaseResetJob>();
+    
+    logger.LogInformation("Database reset command detected");
+    
+    try
+    {
+        resetJob.ResetDatabaseAsync().GetAwaiter().GetResult();
+        logger.LogInformation("Database reset completed successfully");
+        return; // Exit after reset
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "Error resetting database");
+        return 1; // Exit with error code
+    }
+}
 
 // Configure the HTTP request pipeline
 // Apply rate limiting
