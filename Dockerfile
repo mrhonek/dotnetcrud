@@ -26,6 +26,9 @@ COPY --from=publish /app/publish .
 COPY start.sh .
 RUN chmod +x start.sh
 
+# Install curl for API calls
+RUN apt-get update && apt-get install -y curl && apt-get clean
+
 # Set environment variables
 ENV ASPNETCORE_URLS=http://+:8000
 ENV PORT=8000

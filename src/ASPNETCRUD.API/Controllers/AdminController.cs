@@ -46,5 +46,30 @@ namespace ASPNETCRUD.API.Controllers
                 return StatusCode(500, new { message = "Error resetting demo data", error = ex.Message });
             }
         }
+
+        [HttpPost("cron-reset")]
+        public async Task<IActionResult> CronReset()
+        {
+            // Check if this is a Railway cron job
+            var isCronJob = Environment.GetEnvironmentVariable("RAILWAY_CRON_JOB");
+            if (string.IsNullOrEmpty(isCronJob))
+            {
+                _logger.LogWarning("Unauthorized cron-reset attempt from non-cron environment");
+                return Unauthorized(new { message = "This endpoint can only be called from a Railway cron job" });
+            }
+
+            try
+            {
+                _logger.LogInformation("Starting cron-triggered database reset");
+                await _seeder.SeedDemoDataAsync();
+                _logger.LogInformation("Cron-triggered database reset completed successfully");
+                return Ok(new { message = "Database reset successful", timestamp = DateTime.UtcNow });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during cron-triggered database reset");
+                return StatusCode(500, new { message = "Error resetting database", error = ex.Message });
+            }
+        }
     }
 } 
