@@ -12,8 +12,14 @@ using System.Net.Mime;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Add immediately visible console output for debugging
+Console.WriteLine("Starting application...");
+Console.WriteLine($"Environment: {builder.Environment.EnvironmentName}");
+Console.WriteLine($"Railway Cron Job: {Environment.GetEnvironmentVariable("RAILWAY_CRON_JOB") ?? "Not set"}");
+
 // Check for database reset command
 bool resetDatabase = args.Contains("--reset-database");
+Console.WriteLine($"Reset database: {resetDatabase}");
 
 // Load environment variables
 var environment = builder.Environment.EnvironmentName;
@@ -138,12 +144,11 @@ app.UseStaticFiles();
 // Apply rate limiting
 app.UseIpRateLimiting();
 
-// Add a super simple health check endpoint directly (as backup)
-app.MapGet("/health", async (HttpContext context) => {
-    await context.Response.WriteAsync("OK");
-});
+// Add a simple health check endpoint directly
+app.MapGet("/health", () => "OK");
+app.MapGet("/healthz", () => "OK");
 
-// Map health checks from the service (as backup)
+// Map health checks from the service
 app.MapHealthChecks("/health-detailed");
 
 // Apply Swagger basic auth
@@ -210,26 +215,38 @@ app.UseAuthorization();
 app.MapControllers();
 
 // Run EF Core migrations automatically with better error logging
-using (var scope = app.Services.CreateScope())
+try 
 {
-    var services = scope.ServiceProvider;
-    var logger = services.GetRequiredService<ILogger<Program>>();
-    
-    try
+    Console.WriteLine("Starting database initialization");
+    using (var scope = app.Services.CreateScope())
     {
-        logger.LogInformation("Starting database initialization");
-        var context = services.GetRequiredService<ASPNETCRUD.Infrastructure.Data.ApplicationDbContext>();
-        logger.LogInformation("Database context created");
+        var services = scope.ServiceProvider;
+        var logger = services.GetRequiredService<ILogger<Program>>();
         
-        logger.LogInformation("Ensuring database is created");
-        var dbCreated = context.Database.EnsureCreated();
-        logger.LogInformation("Database created: {Created}", dbCreated);
-    }
-    catch (Exception ex)
-    {
-        logger.LogError(ex, "An error occurred while initializing the database");
+        try
+        {
+            logger.LogInformation("Starting database initialization");
+            var context = services.GetRequiredService<ASPNETCRUD.Infrastructure.Data.ApplicationDbContext>();
+            logger.LogInformation("Database context created");
+            
+            logger.LogInformation("Ensuring database is created");
+            var dbCreated = context.Database.EnsureCreated();
+            logger.LogInformation("Database created: {Created}", dbCreated);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "An error occurred while initializing the database");
+            Console.WriteLine($"DATABASE ERROR: {ex.Message}");
+            // Don't throw - allow application to continue even if database setup fails
+        }
     }
 }
+catch (Exception ex) 
+{
+    Console.WriteLine($"STARTUP ERROR: {ex.Message}");
+    // Don't throw - allow application to continue even if database setup fails
+}
 
+Console.WriteLine("Application startup complete, running the app...");
 app.Run();
 return 0; // Add return at the end of the program 

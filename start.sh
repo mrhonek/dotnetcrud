@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Added debug logging to help troubleshoot
+echo "Starting script with environment: ASPNETCORE_ENVIRONMENT=$ASPNETCORE_ENVIRONMENT"
+echo "RAILWAY_CRON_JOB is set to: ${RAILWAY_CRON_JOB:-not set}"
+
 # Check if this is a cron job run
 if [ "$RAILWAY_CRON_JOB" = "true" ]; then
   # Execute the database reset by calling the API endpoint
@@ -28,6 +32,6 @@ if [ "$RAILWAY_CRON_JOB" = "true" ]; then
   exit $RESULT
 else
   # Normal startup for the web application
-  echo "Starting web application"
-  dotnet ASPNETCRUD.API.dll
+  echo "Starting web application normally"
+  exec dotnet ASPNETCRUD.API.dll
 fi 
