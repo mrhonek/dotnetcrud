@@ -59,7 +59,7 @@ builder.Services.AddSwaggerGen(c =>
     { 
         Title = "ASPNETCRUD API", 
         Version = "v1",
-        Description = "🚨 DEMO PROJECT - DATA IS EPHEMERAL 🚨\n\nA demo API showcasing ASP.NET Core and Clean Architecture. This is a portfolio project with data that resets.,
+        Description = "🚨 DEMO PROJECT - DATA IS EPHEMERAL 🚨\n\nA demo API showcasing ASP.NET Core and Clean Architecture. This is a portfolio project with ephemeral data.",
         Contact = new OpenApiContact
         {
             Name = "Portfolio Demo Project",
