@@ -116,7 +116,7 @@ if (resetDatabase)
     {
         resetJob.ResetDatabaseAsync().GetAwaiter().GetResult();
         logger.LogInformation("Database reset completed successfully");
-        return; // Exit after reset
+        return 0; // Exit with success code
     }
     catch (Exception ex)
     {
@@ -214,4 +214,5 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-app.Run(); 
+app.Run();
+return 0; // Add return at the end of the program 

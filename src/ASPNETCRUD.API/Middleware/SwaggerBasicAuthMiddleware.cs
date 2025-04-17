@@ -19,7 +19,7 @@ namespace ASPNETCRUD.API.Middleware
             // Only apply to Swagger paths
             if (IsSwaggerRequest(context.Request.Path))
             {
-                string authHeader = context.Request.Headers["Authorization"];
+                string? authHeader = context.Request.Headers["Authorization"];
                 
                 // Check if credentials are provided
                 if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Basic "))
@@ -29,7 +29,10 @@ namespace ASPNETCRUD.API.Middleware
                 }
 
                 // Validate credentials
-                var encodedCredentials = authHeader.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries)[1]?.Trim();
+                var encodedCredentials = authHeader.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries).Length > 1 
+                    ? authHeader.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries)[1]?.Trim() 
+                    : null;
+                
                 if (string.IsNullOrEmpty(encodedCredentials))
                 {
                     SetUnauthorizedResponse(context);
