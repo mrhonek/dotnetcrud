@@ -1,6 +1,7 @@
 #!/bin/bash
 
 # Script to reset demo data - intended to be run as a cron job in Railway
+# Updated for better async handling and logging
 
 # Get the API URL from environment or use default
 API_URL=${API_URL:-"https://aspnetcrud-production.up.railway.app"}
