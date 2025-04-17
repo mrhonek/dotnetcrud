@@ -28,13 +28,13 @@ COPY --from=publish /app/publish .
 RUN apt-get update && apt-get install -y curl && apt-get clean
 
 # Set environment variables
-ENV ASPNETCORE_URLS=http://+:8000
-ENV PORT=8000
+ENV ASPNETCORE_URLS=http://+:8080
+ENV PORT=8080
 ENV ASPNETCORE_ENVIRONMENT=Production
 ENV ASPNETCORE_DETAILEDERRORS=true
 
 # Expose the port
-EXPOSE 8000
+EXPOSE 8080
 EXPOSE 80
 
 # Create health check file
