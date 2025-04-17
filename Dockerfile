@@ -23,8 +23,6 @@ RUN dotnet publish "ASPNETCRUD.API.csproj" -c Release -o /app/publish
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-COPY start.sh .
-RUN chmod +x start.sh
 
 # Install curl for API calls
 RUN apt-get update && apt-get install -y curl && apt-get clean
@@ -41,5 +39,5 @@ EXPOSE 80
 # Create health check file
 RUN echo "Healthy" > /app/health.txt
 
-# Start the application using our script
-ENTRYPOINT ["./start.sh"] 
+# Start the application directly
+ENTRYPOINT ["dotnet", "ASPNETCRUD.API.dll"] 
