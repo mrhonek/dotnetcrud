@@ -31,13 +31,22 @@ RUN apt-get update && apt-get install -y curl && apt-get clean
 ENV ASPNETCORE_URLS=http://+:8000
 ENV PORT=8000
 ENV ASPNETCORE_ENVIRONMENT=Production
+ENV ASPNETCORE_DETAILEDERRORS=true
 
 # Expose the port
 EXPOSE 8000
 EXPOSE 80
 
 # Create health check file
-RUN echo "Healthy" > /app/health.txt
+RUN echo "OK" > /app/wwwroot/health.txt
+RUN echo "OK" > /app/health.txt
 
-# Start the application directly
-ENTRYPOINT ["dotnet", "ASPNETCRUD.API.dll"] 
+# Create a startup script with error handling
+RUN echo '#!/bin/bash\n\
+echo "Starting application with environment: $ASPNETCORE_ENVIRONMENT"\n\
+echo "PORT: $PORT, ASPNETCORE_URLS: $ASPNETCORE_URLS"\n\
+exec dotnet ASPNETCRUD.API.dll || { echo "Application crashed with exit code $?"; exit 1; }\n\
+' > /app/start.sh && chmod +x /app/start.sh
+
+# Start with error handling
+ENTRYPOINT ["/app/start.sh"] 

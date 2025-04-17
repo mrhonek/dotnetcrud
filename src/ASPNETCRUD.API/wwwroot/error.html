@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ASP.NET CRUD API Error Page</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; }
+        h1 { color: #e74c3c; }
+        .error { padding: 20px; background-color: #fcefef; border-radius: 5px; border-left: 5px solid #e74c3c; }
+        .status { padding: 20px; background-color: #f8f9fa; border-radius: 5px; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <h1>Static Error Page</h1>
+    <div class="error">
+        <p>This is a static error page served from wwwroot/error.html.</p>
+        <p>If you can see this page, it means that static file serving is working, but the API may be experiencing issues.</p>
+    </div>
+    <div class="status">
+        <p><strong>Troubleshooting steps:</strong></p>
+        <ol>
+            <li>Check the Railway logs for detailed error information</li>
+            <li>Verify database connection strings are correct</li>
+            <li>Check if Railway environment variables are properly set</li>
+            <li>Try accessing the /health endpoint directly</li>
+        </ol>
+    </div>
+</body>
+</html> 
