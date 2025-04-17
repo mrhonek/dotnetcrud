@@ -8,6 +8,7 @@ restartPolicyMaxRetries = 10
 healthcheckPath = "/health"
 healthcheckTimeout = 300
 healthcheckInterval = 60
+healthcheckRetries = 5
 
 [[crons]]
 schedule = "0 2 * * *"

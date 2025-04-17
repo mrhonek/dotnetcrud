@@ -6,6 +6,9 @@ using ASPNETCRUD.Infrastructure;
 using Microsoft.OpenApi.Models;
 using System.IO;
 using AspNetCoreRateLimit;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using System.Text.Json;
+using System.Net.Mime;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -100,6 +103,9 @@ builder.Services.AddCors(options =>
             .AllowAnyHeader();
     });
 });
+
+// Add health checks
+builder.Services.AddHealthChecks();
 
 var app = builder.Build();
 
@@ -213,6 +219,28 @@ using (var scope = app.Services.CreateScope())
         logger.LogError(ex, "An error occurred while initializing the database");
     }
 }
+
+// Map health checks endpoint
+app.MapHealthChecks("/health", new HealthCheckOptions
+{
+    ResponseWriter = async (context, report) =>
+    {
+        var result = JsonSerializer.Serialize(
+            new 
+            { 
+                status = report.Status.ToString(),
+                checks = report.Entries.Select(e => new 
+                { 
+                    name = e.Key, 
+                    status = e.Value.Status.ToString(),
+                    description = e.Value.Description
+                })
+            });
+        
+        context.Response.ContentType = MediaTypeNames.Application.Json;
+        await context.Response.WriteAsync(result);
+    }
+});
 
 app.Run();
 return 0; // Add return at the end of the program 
