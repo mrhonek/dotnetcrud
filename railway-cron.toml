@@ -1,0 +1,19 @@
+# Railway cron job configuration for resetting demo data
+[build]
+builder = "nixpacks"
+buildCommand = "chmod +x reset-demo-data.sh"
+
+[deploy]
+startCommand = "./reset-demo-data.sh"
+restartPolicyType = "on_failure"
+numReplicas = 1
+
+# Configure environment variables in Railway dashboard
+[variables]
+API_URL = "https://aspnetcrud-production.up.railway.app"
+# Set DEMO_RESET_API_KEY in Railway dashboard secrets
+
+# Run at 2 AM UTC every day
+[[crons]]
+schedule = "0 2 * * *"
+command = "./reset-demo-data.sh" 

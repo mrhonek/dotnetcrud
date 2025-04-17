@@ -1,8 +1,10 @@
 using ASPNETCRUD.API.Middleware;
+using ASPNETCRUD.API.Services;
 using ASPNETCRUD.Application;
 using ASPNETCRUD.Infrastructure;
 using Microsoft.OpenApi.Models;
 using System.IO;
+using AspNetCoreRateLimit;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,6 +14,14 @@ builder.Configuration
     .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
     .AddJsonFile($"appsettings.{environment}.json", optional: true, reloadOnChange: true)
     .AddEnvironmentVariables(); // Explicitly load environment variables
+
+// Add rate limiting services
+builder.Services.AddMemoryCache();
+builder.Services.Configure<IpRateLimitOptions>(builder.Configuration.GetSection("IpRateLimiting"));
+builder.Services.AddSingleton<IIpPolicyStore, MemoryCacheIpPolicyStore>();
+builder.Services.AddSingleton<IRateLimitCounterStore, MemoryCacheRateLimitCounterStore>();
+builder.Services.AddSingleton<IRateLimitConfiguration, RateLimitConfiguration>();
+builder.Services.AddInMemoryRateLimiting();
 
 // Add services to the container
 builder.Services.AddControllers();
@@ -23,6 +33,9 @@ builder.Logging.AddDebug();
 // Add temporary debug logs
 builder.Logging.AddFilter("ASPNETCRUD.API.Controllers.AuthController", LogLevel.Debug);
 builder.Logging.AddFilter("ASPNETCRUD.Infrastructure.Services.AuthService", LogLevel.Debug);
+
+// Register the DataSeeder
+builder.Services.AddScoped<DataSeeder>();
 
 // Add Swagger
 builder.Services.AddEndpointsApiExplorer();
@@ -86,6 +99,12 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 
 // Configure the HTTP request pipeline
+// Apply rate limiting
+app.UseIpRateLimiting();
+
+// Apply Swagger basic auth
+app.UseMiddleware<SwaggerBasicAuthMiddleware>();
+
 // Enable Swagger in all environments for demonstration purposes
 app.UseSwagger();
 app.UseSwaggerUI();
