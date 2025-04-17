@@ -28,9 +28,15 @@ RUN chmod +x start.sh
 
 # Set environment variables
 ENV ASPNETCORE_URLS=http://+:8000
+ENV PORT=8000
+ENV ASPNETCORE_ENVIRONMENT=Production
 
 # Expose the port
 EXPOSE 8000
+EXPOSE 80
+
+# Create health check file
+RUN echo "Healthy" > /app/health.txt
 
 # Start the application using our script
 ENTRYPOINT ["./start.sh"] 

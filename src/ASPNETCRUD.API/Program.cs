@@ -132,8 +132,19 @@ if (resetDatabase)
 }
 
 // Configure the HTTP request pipeline
+// Serve static files first, this will handle /health if the file exists
+app.UseStaticFiles();
+
 // Apply rate limiting
 app.UseIpRateLimiting();
+
+// Add a super simple health check endpoint directly (as backup)
+app.MapGet("/health", async (HttpContext context) => {
+    await context.Response.WriteAsync("OK");
+});
+
+// Map health checks from the service (as backup)
+app.MapHealthChecks("/health-detailed");
 
 // Apply Swagger basic auth
 app.UseMiddleware<SwaggerBasicAuthMiddleware>();
@@ -219,28 +230,6 @@ using (var scope = app.Services.CreateScope())
         logger.LogError(ex, "An error occurred while initializing the database");
     }
 }
-
-// Map health checks endpoint
-app.MapHealthChecks("/health", new HealthCheckOptions
-{
-    ResponseWriter = async (context, report) =>
-    {
-        var result = JsonSerializer.Serialize(
-            new 
-            { 
-                status = report.Status.ToString(),
-                checks = report.Entries.Select(e => new 
-                { 
-                    name = e.Key, 
-                    status = e.Value.Status.ToString(),
-                    description = e.Value.Description
-                })
-            });
-        
-        context.Response.ContentType = MediaTypeNames.Application.Json;
-        await context.Response.WriteAsync(result);
-    }
-});
 
 app.Run();
 return 0; // Add return at the end of the program 
