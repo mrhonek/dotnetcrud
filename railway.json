@@ -14,6 +14,14 @@
     "ASPNETCORE_URLS": "http://+:8080",
     "ASPNETCORE_ENVIRONMENT": "Production",
     "ASPNETCORE_DETAILEDERRORS": "true",
-    "DOTNET_PRINT_TELEMETRY_MESSAGE": "false"
-  }
+    "DOTNET_PRINT_TELEMETRY_MESSAGE": "false",
+    "SwaggerAuth__Username": "portfolio",
+    "SwaggerAuth__Password": "demo2024"
+  },
+  "crons": [
+    {
+      "schedule": "0 2 * * *",
+      "command": "dotnet ASPNETCRUD.API.dll --reset-database"
+    }
+  ]
 } 

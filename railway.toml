@@ -13,8 +13,10 @@ ASPNETCORE_URLS = "http://+:8080"
 ASPNETCORE_ENVIRONMENT = "Production"
 ASPNETCORE_DETAILEDERRORS = "true"
 DOTNET_PRINT_TELEMETRY_MESSAGE = "false"
+SwaggerAuth__Username = "portfolio"
+SwaggerAuth__Password = "demo2024"
 
-# TEMPORARILY DISABLED - Run at 2 AM UTC every day
-# [[crons]]
-# schedule = "0 2 * * *"
-# command = "dotnet ASPNETCRUD.API.dll --reset-database" 
+# Re-enable cron job now that the application is working
+[[crons]]
+schedule = "0 2 * * *"
+command = "dotnet ASPNETCRUD.API.dll --reset-database" 
