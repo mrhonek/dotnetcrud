@@ -7,6 +7,7 @@ restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
 # Health check removed - not needed for demo project
 
-[[crons]]
-schedule = "0 2 * * *"
-command = "dotnet ASPNETCRUD.API.dll --reset-database" 
+# TEMPORARILY DISABLED - Run at 2 AM UTC every day
+# [[crons]]
+# schedule = "0 2 * * *"
+# command = "dotnet ASPNETCRUD.API.dll --reset-database" 

@@ -10,11 +10,5 @@
   },
   "variables": {
     "API_URL": "https://aspnetcrud-production.up.railway.app"
-  },
-  "crons": [
-    {
-      "schedule": "0 2 * * *",
-      "command": "dotnet ASPNETCRUD.API.dll --reset-database"
-    }
-  ]
+  }
 } 
