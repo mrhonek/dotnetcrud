@@ -13,7 +13,7 @@ numReplicas = 1
 API_URL = "https://aspnetcrud-production.up.railway.app"
 # Set DEMO_RESET_API_KEY in Railway dashboard secrets
 
-# Run at 2 AM UTC every day
-[[crons]]
-schedule = "0 2 * * *"
-command = "./reset-demo-data.sh" 
+# TEMPORARILY DISABLED - Run at 2 AM UTC every day
+# [[crons]]
+# schedule = "0 2 * * *"
+# command = "./reset-demo-data.sh" 
