@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
 using System;
 using System.Threading;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ASPNETCRUD.API.Controllers
 {
@@ -14,17 +15,20 @@ namespace ASPNETCRUD.API.Controllers
         private readonly DataSeeder _seeder;
         private readonly ILogger<AdminController> _logger;
         private readonly IConfiguration _configuration;
+        private readonly IServiceProvider _serviceProvider;
         private static readonly SemaphoreSlim _resetLock = new SemaphoreSlim(1, 1);
         private static bool _isResetting = false;
 
         public AdminController(
             DataSeeder seeder, 
             ILogger<AdminController> logger,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            IServiceProvider serviceProvider)
         {
             _seeder = seeder;
             _logger = logger;
             _configuration = configuration;
+            _serviceProvider = serviceProvider;
         }
 
         [HttpPost("reset-demo-data")]
@@ -67,6 +71,7 @@ namespace ASPNETCRUD.API.Controllers
                 }
 
                 // Start the reset process in a background thread
+                // Use a captured service provider to create a new scope
                 ThreadPool.QueueUserWorkItem(async _ => 
                 {
                     try 
@@ -77,8 +82,21 @@ namespace ASPNETCRUD.API.Controllers
                             {
                                 _isResetting = true;
                                 _logger.LogInformation("Starting database reset in background thread at {Time}", DateTime.UtcNow);
-                                await _seeder.SeedDemoDataAsync();
-                                _logger.LogInformation("Database reset completed successfully at {Time}", DateTime.UtcNow);
+                                
+                                // Create a new scope to get fresh instances of all services
+                                using (var scope = _serviceProvider.CreateScope())
+                                {
+                                    // Get a new instance of DataSeeder within this scope
+                                    var scopedSeeder = scope.ServiceProvider.GetRequiredService<DataSeeder>();
+                                    
+                                    // Use the logger from the controller since it's typically a singleton
+                                    _logger.LogInformation("Running database seeding in background thread with new scope");
+                                    
+                                    // Execute the seeding operation
+                                    await scopedSeeder.SeedDemoDataAsync();
+                                    
+                                    _logger.LogInformation("Database reset completed successfully at {Time}", DateTime.UtcNow);
+                                }
                             }
                             catch (Exception ex)
                             {
