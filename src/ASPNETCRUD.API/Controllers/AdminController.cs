@@ -1,6 +1,9 @@
 using ASPNETCRUD.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Threading.Tasks;
+using System;
+using System.Threading;
 
 namespace ASPNETCRUD.API.Controllers
 {
@@ -11,6 +14,8 @@ namespace ASPNETCRUD.API.Controllers
         private readonly DataSeeder _seeder;
         private readonly ILogger<AdminController> _logger;
         private readonly IConfiguration _configuration;
+        private static readonly SemaphoreSlim _resetLock = new SemaphoreSlim(1, 1);
+        private static bool _isResetting = false;
 
         public AdminController(
             DataSeeder seeder, 
@@ -48,28 +53,74 @@ namespace ASPNETCRUD.API.Controllers
         }
 
         [HttpPost("cron-reset")]
-        public async Task<IActionResult> CronReset()
+        public IActionResult CronReset()
         {
-            // Check if this is a Railway cron job
-            var isCronJob = Environment.GetEnvironmentVariable("RAILWAY_CRON_JOB");
-            if (string.IsNullOrEmpty(isCronJob))
-            {
-                _logger.LogWarning("Unauthorized cron-reset attempt from non-cron environment");
-                return Unauthorized(new { message = "This endpoint can only be called from a Railway cron job" });
-            }
-
             try
             {
-                _logger.LogInformation("Starting cron-triggered database reset");
-                await _seeder.SeedDemoDataAsync();
-                _logger.LogInformation("Cron-triggered database reset completed successfully");
-                return Ok(new { message = "Database reset successful", timestamp = DateTime.UtcNow });
+                _logger.LogInformation("Cron reset endpoint called at {Time}", DateTime.UtcNow);
+                
+                // Check if a reset is already in progress
+                if (_isResetting)
+                {
+                    _logger.LogWarning("Reset already in progress, skipping new request");
+                    return StatusCode(429, "Reset operation already in progress");
+                }
+
+                // Start the reset process in a background thread
+                ThreadPool.QueueUserWorkItem(async _ => 
+                {
+                    try 
+                    {
+                        if (await _resetLock.WaitAsync(0)) // Try to acquire lock without waiting
+                        {
+                            try
+                            {
+                                _isResetting = true;
+                                _logger.LogInformation("Starting database reset in background thread at {Time}", DateTime.UtcNow);
+                                await _seeder.SeedDemoDataAsync();
+                                _logger.LogInformation("Database reset completed successfully at {Time}", DateTime.UtcNow);
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogError(ex, "Error during database reset in background thread");
+                            }
+                            finally
+                            {
+                                _isResetting = false;
+                                _resetLock.Release();
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Error in background thread management");
+                        _isResetting = false;
+                    }
+                });
+
+                return Ok("Database reset initiated. The operation will complete in the background.");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error during cron-triggered database reset");
-                return StatusCode(500, new { message = "Error resetting database", error = ex.Message });
+                _logger.LogError(ex, "Error in cron reset endpoint");
+                return StatusCode(500, "An error occurred during reset operation");
             }
+        }
+        
+        // New public endpoint with simple auth for manual resets
+        [HttpGet("manual-reset")]
+        public IActionResult ManualReset([FromQuery] string key)
+        {
+            // Verify secret key for authorization
+            var configuredApiKey = _configuration["DemoSettings:ApiKey"];
+            if (string.IsNullOrEmpty(configuredApiKey) || key != configuredApiKey)
+            {
+                _logger.LogWarning("Unauthorized manual reset attempt with invalid key");
+                return Unauthorized(new { message = "Invalid key" });
+            }
+            
+            // Call the cron reset endpoint which handles background processing
+            return CronReset();
         }
     }
 } 

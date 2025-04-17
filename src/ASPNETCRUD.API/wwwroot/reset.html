@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ASPNETCRUD Database Reset</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; }
+        h1 { color: #4a4a4a; }
+        .card { padding: 20px; background-color: #f8f9fa; border-radius: 5px; margin-top: 20px; max-width: 500px; }
+        .button { background-color: #d9534f; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; }
+        .success { color: green; }
+        .error { color: red; }
+        input[type="text"] { padding: 8px; width: 100%; box-sizing: border-box; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <h1>ASPNETCRUD Database Reset</h1>
+    <div class="card">
+        <p>This tool allows you to manually reset the database to its initial demo state.</p>
+        <p><strong>Warning:</strong> This will delete all existing data and recreate the demo data.</p>
+        
+        <form id="resetForm">
+            <label for="apiKey">API Key:</label>
+            <input type="text" id="apiKey" name="apiKey" value="demo-reset-key-2024">
+            <button type="submit" class="button">Reset Database</button>
+        </form>
+        
+        <div id="result" style="margin-top: 20px;"></div>
+    </div>
+
+    <script>
+        document.getElementById('resetForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            var apiKey = document.getElementById('apiKey').value;
+            var resultDiv = document.getElementById('result');
+            
+            resultDiv.innerHTML = '<p>Resetting database... This may take a moment.</p>';
+            
+            fetch('/api/Admin/manual-reset?key=' + apiKey)
+                .then(response => {
+                    if (response.ok) {
+                        return response.text().then(text => {
+                            resultDiv.innerHTML = '<p class="success">✅ ' + text + '</p>';
+                        });
+                    } else {
+                        return response.json().then(data => {
+                            resultDiv.innerHTML = '<p class="error">❌ Error: ' + (data.message || 'Unknown error') + '</p>';
+                        }).catch(() => {
+                            resultDiv.innerHTML = '<p class="error">❌ Error: Unable to reset database.</p>';
+                        });
+                    }
+                })
+                .catch(error => {
+                    resultDiv.innerHTML = '<p class="error">❌ Error: ' + error.message + '</p>';
+                });
+        });
+    </script>
+</body>
+</html> 
