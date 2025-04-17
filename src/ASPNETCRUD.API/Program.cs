@@ -141,6 +141,9 @@ if (resetDatabase)
 // Serve static files first, this will handle /health if the file exists
 app.UseStaticFiles();
 
+// Add a root path handler that redirects to Swagger
+app.MapGet("/", () => Results.Redirect("/swagger/index.html"));
+
 // Apply rate limiting
 app.UseIpRateLimiting();
 
