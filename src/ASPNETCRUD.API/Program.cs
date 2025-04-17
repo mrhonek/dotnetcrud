@@ -45,11 +45,11 @@ builder.Services.AddSwaggerGen(c =>
     { 
         Title = "ASPNETCRUD API", 
         Version = "v1",
-        Description = "A simple ASP.NET Core Web API for CRUD operations",
+        Description = "📢 DEMO PROJECT - DATA RESETS DAILY 📢\n\nA demo API showcasing ASP.NET Core and Clean Architecture. This is a portfolio project with data that resets daily at 2 AM UTC.\n\nDemo Credentials:\n- Admin: demo / Demo@123\n- User: user / User@123",
         Contact = new OpenApiContact
         {
-            Name = "Your Name",
-            Email = "your.email@example.com"
+            Name = "Portfolio Demo Project",
+            Url = new Uri("https://github.com/mrhonek/dotnetcrud")
         }
     });
 
